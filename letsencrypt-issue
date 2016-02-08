@@ -1,0 +1,76 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# The MIT License (MIT)
+#
+# Copyright (c) 2016 Radek Senfeld <rush@logic.cz>
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
+
+import os
+import sys
+import argparse
+import subprocess
+import yaml
+
+BASEDIR = "/etc/letsencrypt"
+
+if __name__ == "__main__":
+	parser = argparse.ArgumentParser(description="simp_le wrapper")
+	parser.add_argument("domain", nargs='+', help="Domain name")
+	args = parser.parse_args()
+
+	#
+	updated = 0
+
+	for domain in args.domain:
+		domain_basedir = os.path.join(BASEDIR, domain)
+		domain_config_file = os.path.join(domain_basedir, "config.yaml")
+
+		if os.path.isfile(domain_config_file):
+			with open(domain_config_file, "r") as f:
+				domain_config = yaml.load(f)
+
+		domain_config = domain_config or {}
+
+		domain_config_subdomains = domain_config.get("subdomains") or []
+		subdomains = [domain]
+		subdomains += ["{}.{}".format(subdomain, domain) for subdomain in set(["www", "mail"] + domain_config_subdomains)]
+
+		cmd = [
+			"simp_le",
+			"--email", domain_config.get("email", "info@{}".format(domain)),
+			"--default_root", "/srv/www/.acme/",
+			"-f", "account_key.json",
+			"-f", "key.pem",
+			"-f", "cert.pem",
+			"-f", "fullchain.pem",
+		]
+
+		for subdomain in subdomains:
+			cmd += ["-d", subdomain]
+
+		os.chdir(domain_basedir)
+		return_code = subprocess.call(cmd)
+
+		if return_code == 0:
+			updated += 1
+
+	sys.exit(updated)
