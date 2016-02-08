@@ -46,9 +46,9 @@ if __name__ == "__main__":
 
 		if os.path.isfile(domain_config_file):
 			with open(domain_config_file, "r") as f:
-				domain_config = yaml.load(f)
-
-		domain_config = domain_config or {}
+				domain_config = yaml.load(f) or {}
+		else:
+			domain_config = {}
 
 		domain_config_subdomains = domain_config.get("subdomains") or []
 		subdomains = [domain]
