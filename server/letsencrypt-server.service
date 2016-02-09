@@ -1,0 +1,13 @@
+[Unit]
+Description=simp_le server
+After=network.target
+
+[Service]
+SyslogIdentifier=%p
+TimeoutStartSec=0
+Restart=always
+RestartSec=5s
+ExecStart=/usr/local/sbin/letsencrypt-server
+
+[Install]
+WantedBy=multi-user.target
