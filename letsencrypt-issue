@@ -32,32 +32,53 @@ import yaml
 
 BASEDIR = "/etc/letsencrypt"
 
+
+def load_config(config_file, defaults={}):
+	config = defaults
+
+	if os.path.isfile(config_file):
+		with open(config_file, "r") as f:
+			config.update(yaml.load(f) or {})
+
+	return config
+
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description="simp_le wrapper")
 	parser.add_argument("domain", nargs='+', help="Domain name")
 	args = parser.parse_args()
 
+	# load global config file
+	config_file = os.path.join(BASEDIR, "config.yaml")
+	config = load_config(config_file, defaults=dict(
+		webroot="/srv/www/.acme/",
+		subdomains=["www"],
+	))
+
 	#
 	updated = 0
 
+	# domain loop
 	for domain in args.domain:
 		domain_basedir = os.path.join(BASEDIR, domain)
+
+		# load domain config file
 		domain_config_file = os.path.join(domain_basedir, "config.yaml")
+		domain_config = load_config(domain_config_file, defaults=dict(
+			subdomains=[],
+		))
 
-		if os.path.isfile(domain_config_file):
-			with open(domain_config_file, "r") as f:
-				domain_config = yaml.load(f) or {}
-		else:
-			domain_config = {}
+		# make domain dir if necessary
+		if not os.path.isdir(domain_basedir):
+			os.makedirs(domain_basedir, mode=0750)
 
-		domain_config_subdomains = domain_config.get("subdomains") or []
+		# command to run
 		subdomains = [domain]
-		subdomains += ["{}.{}".format(subdomain, domain) for subdomain in set(["www", "mail"] + domain_config_subdomains)]
+		subdomains += ["{}.{}".format(subdomain, domain) for subdomain in set(config.get("subdomains") + domain_config.get("subdomains"))]
 
 		cmd = [
 			"simp_le",
 			"--email", domain_config.get("email", "info@{}".format(domain)),
-			"--default_root", "/srv/www/.acme/",
+			"--default_root", config.get("webroot"),
 			"-f", "account_key.json",
 			"-f", "key.pem",
 			"-f", "cert.pem",
@@ -68,6 +89,7 @@ if __name__ == "__main__":
 			cmd += ["-d", subdomain]
 
 		os.chdir(domain_basedir)
+
 		return_code = subprocess.call(cmd)
 
 		if return_code == 0:
