@@ -44,8 +44,6 @@ def fetch_certificate(endpoint, domain):
 	if not os.path.isdir(domain_basedir):
 		url += "?d=1"
 
-	url += "?d=1"
-
 	r = requests.get(url)
 
 	if r.status_code == 200:
