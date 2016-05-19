@@ -65,6 +65,7 @@ if __name__ == "__main__":
 		domain_config_file = os.path.join(domain_basedir, "config.yaml")
 		domain_config = load_config(domain_config_file, defaults=dict(
 			subdomains=[],
+			alts=[],
 		))
 
 		# make domain dir if necessary
@@ -74,6 +75,9 @@ if __name__ == "__main__":
 		# command to run
 		subdomains = [domain]
 		subdomains += ["{}.{}".format(subdomain, domain) for subdomain in set(config.get("subdomains") + domain_config.get("subdomains"))]
+
+		for alt in domain_config.get("alts"):
+			subdomains += [alt, "www.{}".format(alt)]
 
 		cmd = [
 			"simp_le",

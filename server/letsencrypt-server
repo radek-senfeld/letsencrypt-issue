@@ -60,6 +60,7 @@ def load_domain_config(domain):
 	domain_config_file = os.path.join(domain_basedir, "config.yaml")
 	domain_config = load_config(domain_config_file, defaults=dict(
 		subdomains=[],
+		alts=[],
 	))
 
 	return domain_config
@@ -76,6 +77,9 @@ def issue_certificate(domain):
 	# command to run
 	subdomains = [domain]
 	subdomains += ["{}.{}".format(subdomain, domain) for subdomain in set(config.get("subdomains") + domain_config.get("subdomains"))]
+
+	for alt in domain_config.get("alts"):
+		subdomains += [alt, "www.{}".format(alt)]
 
 	cmd = [
 		"simp_le",
