@@ -109,11 +109,19 @@ def make_tarball(domain):
 
 @server.route("/v1/get/<domain>")
 def get(domain):
-	return_code = issue_certificate(domain)
 	force_download = bottle.request.query.d
+	client_timestamp = bottle.request.query.t
+
+	return_code = issue_certificate(domain)
 
 	if return_code == 2:
 		return bottle.HTTPResponse(status=500)
+
+	domain_key_file = os.path.join(BASEDIR, domain, "key.pem")
+	domain_key_timestamp = os.path.getmtime(domain_key_file) if os.path.isfile(domain_key_file) else None
+
+	if domain_key_timestamp and client_timestamp and int(client_timestamp) < int(domain_key_timestamp):
+		force_download = True
 
 	if return_code == 1 and not force_download:
 		return bottle.HTTPResponse(status=304)

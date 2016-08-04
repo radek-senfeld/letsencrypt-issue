@@ -37,12 +37,14 @@ BASEDIR = "/etc/letsencrypt"
 
 
 def fetch_certificate(endpoint, domain):
-	domain_basedir = os.path.join(BASEDIR, domain)
+	domain_key_file = os.path.join(BASEDIR, domain, "key.pem")
 	url = urlparse.urljoin(endpoint, "/v1/get/" + domain)
 	renewed = False
 
-	if not os.path.isdir(domain_basedir):
+	if not os.path.isfile(domain_key_file):
 		url += "?d=1"
+	else:
+		url += "?t={:d}".format(int(os.path.getmtime(domain_key_file)))
 
 	r = requests.get(url)
 
