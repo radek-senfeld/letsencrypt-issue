@@ -81,10 +81,12 @@ def issue_certificate(domain):
 	for alt in domain_config.get("alts"):
 		subdomains += [alt, "www.{}".format(alt)]
 
+	# FIXME: https://github.com/kuba/simp_le/issues/114
 	cmd = [
 		"simp_le",
 		"--email", domain_config.get("email", "info@{}".format(domain)),
 		"--default_root", config.get("webroot"),
+		"--tos_sha256", "6373439b9f29d67a5cd4d18cbc7f264809342dbf21cb2ba2fc7588df987a6221",
 		"-f", "account_key.json",
 		"-f", "key.pem",
 		"-f", "cert.pem",
